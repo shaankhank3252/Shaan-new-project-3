@@ -142,13 +142,13 @@ module.exports.run = async ({ api, event }) => {
     const avatarOne = await getAvatar(one);
     const avatarTwo = await getAvatar(two);
 
-    const circleOne = await makeCircularImage(avatarOne, 117);
-    const circleTwo = await makeCircularImage(avatarTwo, 117);
+    const circleOne = await makeCircularImage(avatarOne, 280);
+    const circleTwo = await makeCircularImage(avatarTwo, 280);
 
     const template = await Jimp.read(templatePath);
 
-    template.composite(circleOne, 48, 175);
-    template.composite(circleTwo, 310, 170);
+    template.composite(circleOne, 63, 80);
+    template.composite(circleTwo, 525, 88);
 
     const outputPath = path.join(cacheDir, `pair_${one}_${two}_${Date.now()}.png`);
     await template.write(outputPath);
