@@ -21,10 +21,15 @@ module.exports = {
       
       for (let i = 0; i < Math.min(members.length, 30); i++) {
         const uid = members[i];
-        let name = 'Unknown';
+        let name = 'Member';
         try {
           const info = await api.getUserInfo(uid);
-          name = info[uid]?.name || 'Unknown';
+          const rawName = info[uid]?.name;
+          if (rawName && rawName.toLowerCase() !== 'facebook user' && rawName.toLowerCase() !== 'facebook') {
+            name = rawName;
+          } else if (info[uid]?.firstName && info[uid].firstName.toLowerCase() !== 'facebook') {
+            name = info[uid].firstName;
+          }
         } catch {}
         msg += `${i + 1}. ${name}\n   ${uid}\n`;
       }

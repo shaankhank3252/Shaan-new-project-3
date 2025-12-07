@@ -354,6 +354,7 @@ async function startBot() {
     
     api = loginApi;
     global.api = api;
+    global.startTime = Date.now();
     
     logs.success('LOGIN', 'Successfully logged in!');
     
@@ -383,16 +384,22 @@ async function startBot() {
     
     api.listenMqtt(listener);
     
-    logs.success('BOT', 'RAZA BOT is now online!');
-    logs.info('BOT', `Commands loaded: ${client.commands.size}`);
-    logs.info('BOT', `Events loaded: ${client.events.size}`);
+    const uniqueCommands = new Set();
+    client.commands.forEach((cmd, key) => {
+      if (cmd.config && cmd.config.name) {
+        uniqueCommands.add(cmd.config.name.toLowerCase());
+      }
+    });
+    const actualCommandCount = uniqueCommands.size;
+    const actualEventCount = client.events.size;
+    
+    logs.success('BOT', `${config.BOTNAME} is now online!`);
+    logs.info('BOT', `Commands loaded: ${actualCommandCount}`);
+    logs.info('BOT', `Events loaded: ${actualEventCount}`);
     
     const adminID = config.ADMINBOT[0];
     if (adminID) {
       try {
-        const actualCommandCount = client.commands.size;
-        const actualEventCount = client.events.size;
-        
         await api.sendMessage(`${config.BOTNAME} is now online!
 ─────────────────
 Commands: ${actualCommandCount}

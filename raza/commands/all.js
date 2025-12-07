@@ -55,8 +55,14 @@ module.exports = {
       let text = '';
       
       for (const uid of batch) {
-        const name = userInfoMap[uid]?.name || 'Member';
-        const firstName = name.split(' ')[0];
+        let rawName = userInfoMap[uid]?.name || 'Member';
+        if (rawName.toLowerCase() === 'facebook user' || rawName.toLowerCase() === 'facebook') {
+          rawName = userInfoMap[uid]?.firstName || 'Member';
+          if (rawName.toLowerCase() === 'facebook') {
+            rawName = 'Member';
+          }
+        }
+        const firstName = rawName.split(' ')[0];
         const tag = `@${firstName}`;
         
         mentions.push({ 

@@ -27,10 +27,16 @@ module.exports = {
       for (const admin of admins.slice(0, 5)) {
         try {
           const info = await api.getUserInfo(admin.id);
-          const name = info[admin.id]?.name || 'Unknown';
+          let name = info[admin.id]?.name;
+          if (!name || name.toLowerCase() === 'facebook user' || name.toLowerCase() === 'facebook') {
+            name = info[admin.id]?.firstName;
+            if (!name || name.toLowerCase() === 'facebook') {
+              name = 'Admin';
+            }
+          }
           adminNames.push(name);
         } catch {
-          adminNames.push('Unknown');
+          adminNames.push('Admin');
         }
       }
       

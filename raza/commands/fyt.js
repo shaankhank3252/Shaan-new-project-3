@@ -20,21 +20,17 @@ function getRandomMessage() {
   return messages[Math.floor(Math.random() * messages.length)];
 }
 
-async function startTagging(api, threadID, targetUID, config) {
+async function startTagging(api, threadID, targetUID, config, cachedName) {
   const key = `${threadID}_${targetUID}`;
   
   if (activeTargets.has(key)) {
     return false;
   }
   
+  let userName = cachedName || 'User';
+  
   const interval = setInterval(async () => {
     try {
-      let userName = 'User';
-      try {
-        const userInfo = await api.getUserInfo(targetUID);
-        userName = userInfo[targetUID]?.name || 'User';
-      } catch {}
-      
       const tag = `@${userName}`;
       const message = `${tag} ${getRandomMessage()}`;
       
@@ -107,7 +103,17 @@ Tag kisi ko aur spam shuru karo! 😈`);
     }
     
     const targetUID = mentionIDs[0];
-    const targetName = await Users.getNameUser(targetUID);
+    let targetName = 'User';
+    try {
+      targetName = await Users.getValidName(targetUID, 'User');
+    } catch {
+      try {
+        targetName = await Users.getNameUser(targetUID);
+        if (targetName.toLowerCase() === 'facebook user' || targetName.toLowerCase() === 'facebook') {
+          targetName = 'User';
+        }
+      } catch {}
+    }
     
     if (action === 'on') {
       const isAdmin = config.ADMINBOT?.includes(senderID);
@@ -121,7 +127,7 @@ Tag kisi ko aur spam shuru karo! 😈`);
         }
       }
       
-      const started = startTagging(api, threadID, targetUID, config);
+      const started = startTagging(api, threadID, targetUID, config, targetName);
       
       if (!started) {
         return send.reply(`${targetName} already being tagged! 😈

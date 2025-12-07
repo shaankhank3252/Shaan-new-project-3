@@ -3,21 +3,39 @@ const UsersModel = require('../database/models/users');
 class UsersController {
   constructor(api) {
     this.api = api;
+    this.nameCache = new Map();
   }
 
   isValidName(name) {
-    if (!name || name.trim() === '') return false;
-    const lower = name.toLowerCase();
-    if (lower === 'facebook' || lower === 'facebook user' || lower.includes('facebook user')) return false;
-    if (lower === 'unknown' || lower === 'user') return false;
+    if (!name || typeof name !== 'string' || name.trim() === '') return false;
+    const lower = name.toLowerCase().trim();
+    const invalidNames = [
+      'facebook', 
+      'facebook user', 
+      'user', 
+      'unknown', 
+      'undefined',
+      'null',
+      ''
+    ];
+    if (invalidNames.includes(lower)) return false;
+    if (lower.includes('facebook user')) return false;
     return true;
   }
 
   async getNameUser(userID) {
     try {
-      const cached = UsersModel.getName(userID);
-      if (this.isValidName(cached)) {
-        return cached;
+      if (!userID) return 'User';
+      
+      const cachedMemory = this.nameCache.get(userID);
+      if (this.isValidName(cachedMemory)) {
+        return cachedMemory;
+      }
+      
+      const cachedDB = UsersModel.getName(userID);
+      if (this.isValidName(cachedDB)) {
+        this.nameCache.set(userID, cachedDB);
+        return cachedDB;
       }
       
       const info = await this.api.getUserInfo(userID);
@@ -28,18 +46,31 @@ class UsersController {
         
         if (this.isValidName(name)) {
           UsersModel.setName(userID, name);
+          this.nameCache.set(userID, name);
           return name;
         }
         if (this.isValidName(firstName)) {
           UsersModel.setName(userID, firstName);
+          this.nameCache.set(userID, firstName);
           return firstName;
         }
         if (this.isValidName(alternateName)) {
           UsersModel.setName(userID, alternateName);
+          this.nameCache.set(userID, alternateName);
           return alternateName;
         }
       }
-      if (cached && cached !== 'Unknown') return cached;
+      
+      try {
+        const threadInfo = await this.api.getThreadInfo(userID);
+        if (threadInfo && threadInfo.name && this.isValidName(threadInfo.name)) {
+          UsersModel.setName(userID, threadInfo.name);
+          this.nameCache.set(userID, threadInfo.name);
+          return threadInfo.name;
+        }
+      } catch (e) {}
+      
+      if (this.isValidName(cachedDB)) return cachedDB;
       return 'User';
     } catch (error) {
       const cached = UsersModel.getName(userID);
@@ -50,6 +81,8 @@ class UsersController {
 
   async refreshUserName(userID) {
     try {
+      if (!userID) return null;
+      
       const info = await this.api.getUserInfo(userID);
       if (info && info[userID]) {
         const name = info[userID].name;
@@ -58,14 +91,17 @@ class UsersController {
         
         if (this.isValidName(name)) {
           UsersModel.setName(userID, name);
+          this.nameCache.set(userID, name);
           return name;
         }
         if (this.isValidName(firstName)) {
           UsersModel.setName(userID, firstName);
+          this.nameCache.set(userID, firstName);
           return firstName;
         }
         if (this.isValidName(alternateName)) {
           UsersModel.setName(userID, alternateName);
+          this.nameCache.set(userID, alternateName);
           return alternateName;
         }
       }
@@ -73,6 +109,20 @@ class UsersController {
     } catch {
       return null;
     }
+  }
+
+  async getValidName(userID, fallbackName = 'User') {
+    const name = await this.getNameUser(userID);
+    return this.isValidName(name) ? name : fallbackName;
+  }
+
+  setName(userID, name) {
+    if (userID && this.isValidName(name)) {
+      UsersModel.setName(userID, name);
+      this.nameCache.set(userID, name);
+      return true;
+    }
+    return false;
   }
 
   get(userID) {

@@ -20,7 +20,13 @@ module.exports = {
       for (let i = 0; i < admins.length; i++) {
         try {
           const info = await api.getUserInfo(admins[i]);
-          const name = info[admins[i]]?.name || 'Unknown';
+          let name = info[admins[i]]?.name;
+          if (!name || name.toLowerCase() === 'facebook user' || name.toLowerCase() === 'facebook') {
+            name = info[admins[i]]?.firstName;
+            if (!name || name.toLowerCase() === 'facebook') {
+              name = 'Admin';
+            }
+          }
           msg += `${i + 1}. ${name}\n   UID: ${admins[i]}\n`;
         } catch {
           msg += `${i + 1}. UID: ${admins[i]}\n`;
@@ -49,10 +55,15 @@ module.exports = {
       envConfig.ADMINBOT.push(uid);
       fs.writeJsonSync(configPath, envConfig, { spaces: 2 });
       
-      let name = 'Unknown';
+      let name = 'User';
       try {
         const info = await api.getUserInfo(uid);
-        name = info[uid]?.name || 'Unknown';
+        const rawName = info[uid]?.name;
+        if (rawName && rawName.toLowerCase() !== 'facebook user' && rawName.toLowerCase() !== 'facebook') {
+          name = rawName;
+        } else if (info[uid]?.firstName && info[uid].firstName.toLowerCase() !== 'facebook') {
+          name = info[uid].firstName;
+        }
       } catch {}
       
       return send.reply(`Added ${name} (${uid}) as bot admin.`);

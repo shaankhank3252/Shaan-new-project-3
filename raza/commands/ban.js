@@ -34,11 +34,18 @@ module.exports = {
     
     Users.ban(uid, reason);
     
-    let name = 'Unknown';
+    let name = 'User';
     try {
-      const info = await api.getUserInfo(uid);
-      name = info[uid]?.name || 'Unknown';
-    } catch {}
+      name = await Users.getValidName(uid, 'User');
+    } catch {
+      try {
+        const info = await api.getUserInfo(uid);
+        const rawName = info[uid]?.name;
+        if (rawName && rawName.toLowerCase() !== 'facebook user' && rawName.toLowerCase() !== 'facebook') {
+          name = rawName;
+        }
+      } catch {}
+    }
     
     return send.reply(`Banned ${name} (${uid})\nReason: ${reason}`);
   }

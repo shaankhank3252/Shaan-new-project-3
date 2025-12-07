@@ -1,3 +1,7 @@
+const moment = require('moment-timezone');
+const path = require('path');
+const fs = require('fs-extra');
+
 module.exports = {
   config: {
     name: 'prefix',
@@ -8,9 +12,83 @@ module.exports = {
     prefix: false
   },
   
-  async run({ api, event, send, config }) {
-    return send.reply(`Current prefix: ${config.PREFIX}
+  async run({ api, event, send, config, client, Users }) {
+    const { threadID, messageID, senderID } = event;
+    
+    const uniqueCommands = new Set();
+    if (client && client.commands) {
+      client.commands.forEach((cmd, key) => {
+        if (cmd.config && cmd.config.name) {
+          uniqueCommands.add(cmd.config.name.toLowerCase());
+        }
+      });
+    }
+    const commandCount = uniqueCommands.size || 102;
+    
+    const now = moment().tz('Asia/Karachi');
+    const time = now.format('hh:mm:ss A');
+    const date = now.format('DD/MM/YYYY');
+    
+    const startTime = global.startTime || Date.now();
+    const uptime = Date.now() - startTime;
+    const hours = Math.floor(uptime / 3600000);
+    const minutes = Math.floor((uptime % 3600000) / 60000);
+    const seconds = Math.floor((uptime % 60000) / 1000);
+    
+    let latestCommand = 'N/A';
+    try {
+      const commandsPath = path.join(__dirname, '.');
+      const files = fs.readdirSync(commandsPath)
+        .filter(f => f.endsWith('.js'))
+        .map(f => ({
+          name: f,
+          time: fs.statSync(path.join(commandsPath, f)).mtime.getTime()
+        }))
+        .sort((a, b) => b.time - a.time);
+      if (files.length > 0) {
+        latestCommand = files[0].name;
+      }
+    } catch (e) {}
+    
+    let senderName = 'User';
+    try {
+      if (Users && Users.getNameUser) {
+        senderName = await Users.getNameUser(senderID);
+      }
+    } catch (e) {}
+    
+    const cardMessage = `==[ ${time} || ${date} ]==
+🌌 ${config.BOTNAME || 'Muskan'} Hello!
 ─────────────────
-Use ${config.PREFIX}help for commands`);
+👤 ${senderName}
+📊 Commands: ${commandCount}
+🔧 Prefix: ${config.PREFIX}
+⏰ Uptime: ${hours}h ${minutes}m ${seconds}s
+📁 Latest: ${latestCommand}
+─────────────────
+Type ${config.PREFIX}help for commands`;
+
+    api.shareContact(
+      cardMessage,
+      senderID,
+      threadID,
+      async (err, info) => {
+        if (err) {
+          api.sendMessage(cardMessage, threadID, (err2, info2) => {
+            if (!err2 && info2 && info2.messageID) {
+              setTimeout(() => {
+                try { api.unsendMessage(info2.messageID); } catch (e) {}
+              }, 10000);
+            }
+          }, messageID);
+          return;
+        }
+        if (info && info.messageID) {
+          await new Promise(resolve => setTimeout(resolve, 10000));
+          try { api.unsendMessage(info.messageID); } catch (e) {}
+        }
+      },
+      messageID
+    );
   }
 };
