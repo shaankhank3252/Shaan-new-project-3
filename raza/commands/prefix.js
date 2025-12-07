@@ -68,26 +68,12 @@ module.exports = {
 ─────────────────
 Type ${config.PREFIX}help for commands`;
 
-    api.shareContact(
-      cardMessage,
-      senderID,
-      threadID,
-      async (err, info) => {
-        if (err) {
-          api.sendMessage(cardMessage, threadID, (err2, info2) => {
-            if (!err2 && info2 && info2.messageID) {
-              setTimeout(() => {
-                try { api.unsendMessage(info2.messageID); } catch (e) {}
-              }, 10000);
-            }
-          }, messageID);
-          return;
-        }
-        if (info && info.messageID) {
-          await new Promise(resolve => setTimeout(resolve, 10000));
+    api.sendMessage(cardMessage, threadID, (err, info) => {
+      if (!err && info && info.messageID) {
+        setTimeout(() => {
           try { api.unsendMessage(info.messageID); } catch (e) {}
-        }
+        }, 10000);
       }
-    );
+    }, messageID);
   }
 };
