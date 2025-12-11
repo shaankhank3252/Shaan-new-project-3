@@ -18,7 +18,7 @@ const cacheDir = path.join(__dirname, "cache", "canvas");
 const templateUrl = "https://i.postimg.cc/4xBkjr2h/1d7bf01f9f774e687566259fd7fef721.jpg";
 const templatePath = path.join(cacheDir, "watch_template.png");
 
-const maleNames = ["ali", "ahmed", "muhammad", "hassan", "hussain", "kashif", "raza", "usman", "bilal", "hamza", "asad", "zain", "fahad", "faisal", "imran", "kamran", "adnan", "arslan", "waqas", "waseem", "irfan", "junaid", "khalid", "nadeem", "naveed", "omer", "qasim", "rizwan", "sajid", "salman", "shahid", "tariq", "umar", "yasir", "zahid"];
+const maleNames = ["ali", "ahmed", "muhammad", "hassan", "hussain", "shaan", "Shaan", "usman", "bilal", "hamza", "asad", "zain", "fahad", "faisal", "imran", "kamran", "adnan", "arslan", "waqas", "waseem", "irfan", "junaid", "khalid", "nadeem", "naveed", "omer", "qasim", "rizwan", "sajid", "salman", "shahid", "tariq", "umar", "yasir", "zahid"];
 const femaleNames = ["fatima", "ayesha", "maria", "sana", "hira", "zara", "maryam", "khadija", "sara", "amina", "bushra", "farah", "iqra", "javeria", "kinza", "laiba", "maham", "nadia", "rabia", "saima", "tahira", "uzma", "zainab", "anam", "asma", "dua", "esha", "fiza", "huma", "iram"];
 
 const romanticPoetry = [
@@ -157,7 +157,7 @@ module.exports.run = async ({ api, event }) => {
 
     api.sendMessage(
       {
-        body: `≿━━━━༺💝༻━━━━≾\n\n${randomPoetry}\n\n👤 ${nameOne}\n⌚ 𝐖𝐀𝐓𝐂𝐇 𝐏𝐀𝐈𝐑 ⌚\n👤 ${nameTwo}\n\n≿━━━━༺💝༻━━━━≾`,
+        body: `≿━━━━༺𝐎𝐖𝐍𝐄𝐑༻━━━━≾\n\n${randomPoetry}\n\n👤 ${nameOne}\n⌚ 𝐖𝐀𝐓𝐂𝐇 𝐏𝐀𝐈𝐑 ⌚\n👤 ${nameTwo}\n\n≿━━━━༺𝐒𝐇𝐀𝐀𝐍༻━━━━≾`,
         attachment: fs.createReadStream(outputPath),
         mentions: [
           { tag: nameOne, id: one },
