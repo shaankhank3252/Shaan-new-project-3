@@ -104,7 +104,8 @@ module.exports.run = async function ({ api, event, args }) {
         if (thumbPath && fs.existsSync(thumbPath)) {
             await api.sendMessage(
                 {
-                    body: `🎵 ${title}\n📺 ${author}`,
+                    body: ` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
+          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰👉 ${title}\n📺 ${author}`,
                     attachment: fs.createReadStream(thumbPath)
                 },
                 event.threadID
@@ -113,8 +114,7 @@ module.exports.run = async function ({ api, event, args }) {
 
         await api.sendMessage(
             {
-                body: ` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
-          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰 𝑨𝑼𝑫𝑰𝑶`,
+                body: `🎵 audio file`,
                 attachment: fs.createReadStream(audioPath)
             },
             event.threadID
