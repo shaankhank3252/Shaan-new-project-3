@@ -52,7 +52,7 @@ module.exports.run = async function ({ api, event, args }) {
         "💗▰▰▰▰▰▰▰▰▰▰ 100% 😍"
     ];
 
-    const searchMsg = await api.sendMessage(`🔍 Searching: ${query}\n\n${frames[0]}`, event.threadID);
+    const searchMsg = await api.sendMessage(`✅Apki Request Jari Hai Please Wait..: ${query}\n\n${frames[0]}`, event.threadID);
 
     try {
         const searchResults = await yts(query);
@@ -69,7 +69,8 @@ module.exports.run = async function ({ api, event, args }) {
         const author = firstResult.author.name;
         const thumbnail = firstResult.thumbnail;
 
-        await api.editMessage(`🎵 Found: ${title}\n\n${frames[1]}`, searchMsg.messageID, event.threadID);
+        await api.editMessage(` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
+          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰👉: ${title}\n\n${frames[1]}`, searchMsg.messageID, event.threadID);
         await api.editMessage(`🎵 Downloading...\n\n${frames[2]}`, searchMsg.messageID, event.threadID);
 
         const downloadResult = await downloadAudio(videoUrl);
@@ -112,7 +113,8 @@ module.exports.run = async function ({ api, event, args }) {
 
         await api.sendMessage(
             {
-                body: `🎵 Audio File`,
+                body: ` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
+          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰 𝑨𝑼𝑫𝑰𝑶`,
                 attachment: fs.createReadStream(audioPath)
             },
             event.threadID
