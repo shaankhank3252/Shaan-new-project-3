@@ -52,7 +52,7 @@ module.exports.run = async function ({ api, event, args }) {
         "💗▰▰▰▰▰▰▰▰▰▰ 100% 😍"
     ];
 
-    const searchMsg = await api.sendMessage(`🔍 Searching: ${query}\n\n${frames[0]}`, event.threadID);
+    const searchMsg = await api.sendMessage(`✅ Apki Request Jari Hai Please wait...: ${query}\n\n${frames[0]}`, event.threadID);
 
     try {
         const searchResults = await yts(query);
@@ -90,7 +90,8 @@ module.exports.run = async function ({ api, event, args }) {
 
         await api.sendMessage(
             {
-                body: `🎬 ${title}\n📺 ${author}`,
+                body: ` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
+          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰👉 ${title}\n📺 ${author}`,
                 attachment: fs.createReadStream(videoPath)
             },
             event.threadID
