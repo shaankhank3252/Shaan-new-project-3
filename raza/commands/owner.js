@@ -16,10 +16,10 @@ module.exports = {
     const { threadID, messageID } = event;
 
     const ownerPics = [
-      'https://i.ibb.co/672Zf20L/99ea4edb30db.jpg',
-      'https://i.ibb.co/bRBZxk9v/20df2c060ec2.jpg',
-      'https://i.ibb.co/gMkf5Dmk/252782e1baf1.jpg',
-      'https://i.ibb.co/PspxZNzh/b247dec7d443.jpg'
+      'https://i.ibb.co/Z1NFvKbz/7de69b18e700.jpg',
+      'https://i.ibb.co/SDdCvz4P/6dfd9b142618.jpg',
+      'https://i.ibb.co/35sPr6Ft/1bd90c266076.jpg',
+      'https://i.ibb.co/svjgLKdX/b354e17ce5dc.jpg'
     ];
 
     const randomPic = ownerPics[Math.floor(Math.random() * ownerPics.length)];
@@ -29,21 +29,21 @@ module.exports = {
 ║   ✨ 𝐁𝐎𝐓 𝐎𝐖𝐍𝐄𝐑 𝐈𝐍𝐅𝐎 ✨   ║
 ╠═══════════════════════════╣
 ║                           ║
-║  👤 𝐍𝐚𝐦𝐞: 𝙺𝚊𝚎𝚕 𝙳𝚛𝚊𝚟𝚎𝚗𝚣     ║
+║  👤 𝐍𝐚𝐦𝐞:𝚂𝙷𝙰𝙰𝙽-𝙺𝙷𝙰𝙽 𝙺     ║
 ║                           ║
 ╠═══════════════════════════╣
 ║  📱 𝐂𝐨𝐧𝐭𝐚𝐜𝐭 𝐈𝐧𝐟𝐨:          ║
 ║                           ║
 ║  🌐 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤:              ║
-║  facebook.com/kaeldravenz ║
+║  https://www.facebook.com/profile.php?id=100016828397863 ║
 ║                           ║
 ║  📲 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩:              ║
-║  wa.me/923422413092       ║
+║  wa.me/+9233468783346       ║
 ║                           ║
 ╠═══════════════════════════╣
 ║  🤖 𝐁𝐨𝐭 𝐃𝐞𝐭𝐚𝐢𝐥𝐬:           ║
 ║                           ║
-║  📛 Name: ${config.BOTNAME || 'RAZA BOT'}
+║  📛 Name: ${config.BOTNAME || 'SHAAN BOT'}
 ║  ⚡ Prefix: ${config.PREFIX || '.'}
 ║  💻 Version: 2.0.0        ║
 ║  🛠️ Framework: WS3-FCA    ║
