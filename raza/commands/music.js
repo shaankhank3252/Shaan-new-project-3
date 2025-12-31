@@ -1,108 +1,153 @@
-const fs = require("fs");
-const path = require("path");
 const axios = require("axios");
 const yts = require("yt-search");
 
-module.exports.config = {
-  name: "music",
-  version: "3.2.0",
-  hasPermission: 0,
-  credits: "ARIF-BABU", // Credits updated as per your second file requirement
-  description: "Smart music player using YouTube (Fixed API)",
-  usePrefix: false,
-  commandCategory: "Music",
-  cooldowns: 10
-};
-
-const triggerWords = ["pika", "bot", "shankar"];
-const keywordMatchers = ["gana", "music", "song", "suna", "sunao", "play", "chalao", "lagao"];
-
-// --- Helper Functions ---
-async function getBaseApi() {
-  try {
-    const res = await axios.get("https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json");
-    return res.data.api;
-  } catch (e) {
-    return "https://d1pt0.onrender.com"; // Fallback API
-  }
+// 🔐 Credits Lock Check
+function checkCredits() {
+    const correctCredits = "ARIF-BABU";
+    if (module.exports.config.credits !== correctCredits) {
+        throw new Error("❌ Credits Locked By ARIF-BABU");
+    }
 }
 
-// Event handler for trigger words
-module.exports.handleEvent = async function ({ api, event }) {
-  let message = event.body?.toLowerCase();
-  if (!message) return;
+/* 🎞 Loading Frames */
+const frames = [
+  "🎵 ▰▱▱▱▱▱▱▱▱▱ 10%",
+  "🎶 ▰▰▱▱▱▱▱▱▱▱ 20%",
+  "🎧 ▰▰▰▰▱▱▱▱▱▱ 40%",
+  "💿 ▰▰▰▰▰▰▱▱▱▱ 60%",
+  "❤️ ▰▰▰▰▰▰▰▰▰▰ 100%"
+];
 
-  const foundTrigger = triggerWords.find(trigger => message.startsWith(trigger));
-  if (!foundTrigger) return;
-
-  let content = message.slice(foundTrigger.length).trim();
-  if (!content) return;
-
-  const words = content.split(/\s+/);
-  const keywordIndex = words.findIndex(word => keywordMatchers.includes(word));
-  if (keywordIndex === -1 || keywordIndex === words.length - 1) return;
-
-  let songName = words.slice(keywordIndex + 1).join(" ").trim();
-  if (!songName) return;
-
-  module.exports.run({ api, event, args: [songName] });
+const baseApiUrl = async () => {
+    const base = await axios.get(
+        "https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json"
+    );
+    return base.data.api;
 };
 
-module.exports.run = async function ({ api, event, args }) {
-  const query = args.join(" ");
-  if (!query) return api.sendMessage(`❌ | Kripya ek gaane ka naam likhein!`, event.threadID);
+(async () => {
+    global.apis = {
+        diptoApi: await baseApiUrl()
+    };
+})();
 
-  let searchingMsg;
-  try {
-    searchingMsg = await api.sendMessage(`✅ Apki Request Jari Hai Please wait...| "${query}" search kiya ja raha hai...`, event.threadID);
+async function getStreamFromURL(url, pathName) {
+    const response = await axios.get(url, { responseType: "stream" });
+    response.data.path = pathName;
+    return response.data;
+}
 
-    // 1. Search Video on YouTube
-    const searchResult = await yts(query);
-    const video = searchResult.videos[0];
-    if (!video) {
-      return api.sendMessage(`❌ | "${query}" ke liye koi result nahi mila.`, event.threadID);
+function getVideoID(url) {
+    const regex =
+        /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))((\w|-){11})(?:\S+)?$/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+}
+
+// ▶️ Loading animation function
+async function playLoading(api, threadID) {
+    const sent = await api.sendMessage(frames[0], threadID);
+    let i = 1;
+
+    const interval = setInterval(() => {
+        if (i >= frames.length) return clearInterval(interval);
+        try {
+            api.editMessage(frames[i], sent.messageID, threadID);
+        } catch (e) {}
+        i++;
+    }, 700);
+
+    return sent;
+}
+
+module.exports.config = {
+    name: "yt",
+    version: "1.1.1",
+    credits: "ARIF-BABU", // 🔐 DO NOT CHANGE
+    hasPermssion: 0,
+    cooldowns: 5,
+    description: "YouTube video ko URL ya name se MP3 me download karein",
+    commandCategory: "media",
+    usages: "[YouTube URL ya song ka naam]"
+};
+
+module.exports.run = async function ({ api, args, event }) {
+    try {
+        checkCredits();
+
+        let videoID, searchMsg;
+        const url = args[0];
+
+        // 🎞 start loading
+        const loadingMsg = await playLoading(api, event.threadID);
+
+        if (url && (url.includes("youtube.com") || url.includes("youtu.be"))) {
+            videoID = getVideoID(url);
+            if (!videoID) {
+                return api.sendMessage(
+                    "❌ Galat YouTube URL!",
+                    event.threadID,
+                    event.messageID
+                );
+            }
+        } else {
+            const query = args.join(" ");
+            if (!query)
+                return api.sendMessage(
+                    "❌ Song ka naam ya YouTube link do!",
+                    event.threadID,
+                    event.messageID
+                );
+
+            searchMsg = await api.sendMessage(
+                `✅ Apki Request Jari Hai Please wait...: "${query}"`,
+                event.threadID
+            );
+
+            const result = await yts(query);
+            const videos = result.videos.slice(0, 30);
+            const selected =
+                videos[Math.floor(Math.random() * videos.length)];
+            videoID = selected.videoId;
+        }
+
+        const {
+            data: { title, downloadLink }
+        } = await axios.get(
+            `${global.apis.diptoApi}/ytDl3?link=${videoID}&format=mp3`
+        );
+
+        if (searchMsg?.messageID)
+            api.unsendMessage(searchMsg.messageID);
+        if (loadingMsg?.messageID)
+            api.unsendMessage(loadingMsg.messageID);
+
+        const shortLink = (
+            await axios.get(
+                `https://tinyurl.com/api-create.php?url=${encodeURIComponent(
+                    downloadLink
+                )}`
+            )
+        ).data;
+
+        return api.sendMessage(
+            {
+                body: ` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
+          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰👉 Title: ${title}\n📥 Download: ${shortLink}`,
+                attachment: await getStreamFromURL(
+                    downloadLink,
+                    `${title}.mp3`
+                )
+            },
+            event.threadID,
+            event.messageID
+        );
+    } catch (err) {
+        console.error(err);
+        return api.sendMessage(
+            "⚠️ Error: " + (err.message || "Kuch galat ho gaya!"),
+            event.threadID,
+            event.messageID
+        );
     }
-
-    const videoID = video.videoId;
-    const title = video.title;
-
-    // 2. Get API Base URL
-    const apiBase = await getBaseApi();
-    
-    // 3. Get Download Link from New API
-    const res = await axios.get(`${apiBase}/ytDl3?link=${videoID}&format=mp3`);
-    
-    if (!res.data || !res.data.downloadLink) {
-      throw new Error("Download link nahi mil saka");
-    }
-
-    const downloadUrl = res.data.downloadLink;
-
-    // 4. Download and Send
-    const cacheDir = path.join(__dirname, "cache");
-    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
-
-    const filePath = path.join(cacheDir, `${Date.now()}.mp3`);
-    const writer = fs.createWriteStream(filePath);
-    
-    const stream = await axios.get(downloadUrl, { responseType: "stream" });
-    stream.data.pipe(writer);
-
-    writer.on("finish", async () => {
-      await api.sendMessage({
-        body: ` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
-          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰👉: ${title}\n\nAapka gaana taiyar hai!`,
-        attachment: fs.createReadStream(filePath)
-      }, event.threadID);
-
-      // Cleanup
-      if (searchingMsg) api.unsendMessage(searchingMsg.messageID);
-      setTimeout(() => { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); }, 10000);
-    });
-
-  } catch (error) {
-    console.error(error);
-    if (searchingMsg) api.unsendMessage(searchingMsg.messageID);
-    api.sendMessage(`❌ | Error: ${error.message || "Kuch galat ho gaya!"}`, event.threadID);
-  }
 };
