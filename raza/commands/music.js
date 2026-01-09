@@ -1,153 +1,137 @@
-const axios = require("axios");
-const yts = require("yt-search");
+const axios = require('axios');
+const fs = require('fs-extra');
+const path = require('path');
+const yts = require('yt-search');
 
-// 🔐 Credits Lock Check
-function checkCredits() {
-    const correctCredits = "ARIF-BABU";
-    if (module.exports.config.credits !== correctCredits) {
-        throw new Error("❌ Credits Locked By ARIF-BABU");
+module.exports.config = {
+    name: "music",
+    version: "5.0.0",
+    permission: 0,
+    prefix: true,
+    premium: false,
+    category: "media",
+    credits: "SARDAR RDX",
+    description: "Download music from YouTube",
+    commandCategory: "media",
+    usages: ".music [song name]",
+    cooldowns: 5
+};
+
+const API_BASE = "https://yt-tt.onrender.com";
+
+async function downloadAudio(videoUrl) {
+    try {
+        const response = await axios.get(`${API_BASE}/api/youtube/audio`, {
+            params: { url: videoUrl },
+            timeout: 60000,
+            responseType: 'arraybuffer'
+        });
+
+        if (response.data) {
+            return { success: true, data: response.data };
+        }
+        return null;
+    } catch (err) {
+        console.log("Audio download failed:", err.message);
+        return null;
     }
 }
 
-/* 🎞 Loading Frames */
-const frames = [
-  "🎵 ▰▱▱▱▱▱▱▱▱▱ 10%",
-  "🎶 ▰▰▱▱▱▱▱▱▱▱ 20%",
-  "🎧 ▰▰▰▰▱▱▱▱▱▱ 40%",
-  "💿 ▰▰▰▰▰▰▱▱▱▱ 60%",
-  "❤️ ▰▰▰▰▰▰▰▰▰▰ 100%"
-];
+module.exports.run = async function ({ api, event, args }) {
+    const query = args.join(" ");
 
-const baseApiUrl = async () => {
-    const base = await axios.get(
-        "https://raw.githubusercontent.com/Mostakim0978/D1PT0/refs/heads/main/baseApiUrl.json"
-    );
-    return base.data.api;
-};
+    if (!query) {
+        return api.sendMessage("❌ Please provide a song name", event.threadID, event.messageID);
+    }
 
-(async () => {
-    global.apis = {
-        diptoApi: await baseApiUrl()
-    };
-})();
+    const frames = [
+        "🩵▰▱▱▱▱▱▱▱▱▱ 10%",
+        "💙▰▰▱▱▱▱▱▱▱▱ 25%",
+        "💜▰▰▰▰▱▱▱▱▱▱ 45%",
+        "💖▰▰▰▰▰▰▱▱▱▱ 70%",
+        "💗▰▰▰▰▰▰▰▰▰▰ 100% 😍"
+    ];
 
-async function getStreamFromURL(url, pathName) {
-    const response = await axios.get(url, { responseType: "stream" });
-    response.data.path = pathName;
-    return response.data;
-}
+    const searchMsg = await api.sendMessage(`✅ Apki Request Jari Hai Please wait...: ${query}\n\n${frames[0]}`, event.threadID);
 
-function getVideoID(url) {
-    const regex =
-        /^(?:https?:\/\/)?(?:m\.|www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))((\w|-){11})(?:\S+)?$/;
-    const match = url.match(regex);
-    return match ? match[1] : null;
-}
-
-// ▶️ Loading animation function
-async function playLoading(api, threadID) {
-    const sent = await api.sendMessage(frames[0], threadID);
-    let i = 1;
-
-    const interval = setInterval(() => {
-        if (i >= frames.length) return clearInterval(interval);
-        try {
-            api.editMessage(frames[i], sent.messageID, threadID);
-        } catch (e) {}
-        i++;
-    }, 700);
-
-    return sent;
-}
-
-module.exports.config = {
-    name: "yt",
-    version: "1.1.1",
-    credits: "ARIF-BABU", // 🔐 DO NOT CHANGE
-    hasPermssion: 0,
-    cooldowns: 5,
-    description: "YouTube video ko URL ya name se MP3 me download karein",
-    commandCategory: "media",
-    usages: "[YouTube URL ya song ka naam]"
-};
-
-module.exports.run = async function ({ api, args, event }) {
     try {
-        checkCredits();
+        const searchResults = await yts(query);
+        const videos = searchResults.videos;
 
-        let videoID, searchMsg;
-        const url = args[0];
-
-        // 🎞 start loading
-        const loadingMsg = await playLoading(api, event.threadID);
-
-        if (url && (url.includes("youtube.com") || url.includes("youtu.be"))) {
-            videoID = getVideoID(url);
-            if (!videoID) {
-                return api.sendMessage(
-                    "❌ Galat YouTube URL!",
-                    event.threadID,
-                    event.messageID
-                );
-            }
-        } else {
-            const query = args.join(" ");
-            if (!query)
-                return api.sendMessage(
-                    "❌ Song ka naam ya YouTube link do!",
-                    event.threadID,
-                    event.messageID
-                );
-
-            searchMsg = await api.sendMessage(
-                `✅ Apki Request Jari Hai Please wait...: "${query}"`,
-                event.threadID
-            );
-
-            const result = await yts(query);
-            const videos = result.videos.slice(0, 30);
-            const selected =
-                videos[Math.floor(Math.random() * videos.length)];
-            videoID = selected.videoId;
+        if (!videos || videos.length === 0) {
+            api.unsendMessage(searchMsg.messageID);
+            return api.sendMessage("❌ No results found", event.threadID, event.messageID);
         }
 
-        const {
-            data: { title, downloadLink }
-        } = await axios.get(
-            `${global.apis.diptoApi}/ytDl3?link=${videoID}&format=mp3`
-        );
+        const firstResult = videos[0];
+        const videoUrl = firstResult.url;
+        const title = firstResult.title;
+        const author = firstResult.author.name;
+        const thumbnail = firstResult.thumbnail;
 
-        if (searchMsg?.messageID)
+        await api.editMessage(`🎵 Found: ${title}\n\n${frames[1]}`, searchMsg.messageID, event.threadID);
+        await api.editMessage(`🎵 Downloading...\n\n${frames[2]}`, searchMsg.messageID, event.threadID);
+
+        const downloadResult = await downloadAudio(videoUrl);
+
+        if (!downloadResult || !downloadResult.success) {
             api.unsendMessage(searchMsg.messageID);
-        if (loadingMsg?.messageID)
-            api.unsendMessage(loadingMsg.messageID);
+            return api.sendMessage("❌ Download server is busy. Please try again later.", event.threadID, event.messageID);
+        }
 
-        const shortLink = (
-            await axios.get(
-                `https://tinyurl.com/api-create.php?url=${encodeURIComponent(
-                    downloadLink
-                )}`
-            )
-        ).data;
+        await api.editMessage(`🎵 Processing...\n\n${frames[3]}`, searchMsg.messageID, event.threadID);
 
-        return api.sendMessage(
+        const cacheDir = path.join(__dirname, "cache");
+        await fs.ensureDir(cacheDir);
+
+        const audioPath = path.join(cacheDir, `${Date.now()}_audio.mp3`);
+        fs.writeFileSync(audioPath, Buffer.from(downloadResult.data));
+
+        await api.editMessage(`🎵 Complete!\n\n${frames[4]}`, searchMsg.messageID, event.threadID);
+
+        let thumbPath = null;
+        if (thumbnail) {
+            try {
+                const thumbRes = await axios.get(thumbnail, { responseType: 'arraybuffer', timeout: 10000 });
+                thumbPath = path.join(cacheDir, `${Date.now()}_thumb.jpg`);
+                fs.writeFileSync(thumbPath, Buffer.from(thumbRes.data));
+            } catch (thumbError) {
+                console.log("Thumbnail download failed:", thumbError.message);
+            }
+        }
+
+        if (thumbPath && fs.existsSync(thumbPath)) {
+            await api.sendMessage(
+                {
+                    body: `🎵 ${title}\n📺 ${author}`,
+                    attachment: fs.createReadStream(thumbPath)
+                },
+                event.threadID
+            );
+        }
+
+        await api.sendMessage(
             {
                 body: ` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
-          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰👉 Title: ${title}\n📥 Download: ${shortLink}`,
-                attachment: await getStreamFromURL(
-                    downloadLink,
-                    `${title}.mp3`
-                )
+          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰👉`,
+                attachment: fs.createReadStream(audioPath)
             },
-            event.threadID,
-            event.messageID
+            event.threadID
         );
-    } catch (err) {
-        console.error(err);
-        return api.sendMessage(
-            "⚠️ Error: " + (err.message || "Kuch galat ho gaya!"),
-            event.threadID,
-            event.messageID
-        );
+
+        setTimeout(() => {
+            try {
+                if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+                if (thumbPath && fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+                api.unsendMessage(searchMsg.messageID);
+            } catch (err) {
+                console.log("Cleanup error:", err);
+            }
+        }, 10000);
+
+    } catch (error) {
+        console.error("Music command error:", error.message);
+        try { api.unsendMessage(searchMsg.messageID); } catch(e) {}
+        return api.sendMessage("❌ An error occurred. Please try again.", event.threadID, event.messageID);
     }
 };
