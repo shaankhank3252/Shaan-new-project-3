@@ -5,13 +5,13 @@ const yts = require('yt-search');
 
 module.exports.config = {
     name: "music",
-    version: "5.0.0",
+    version: "6.0.0",
     permission: 0,
     prefix: true,
     premium: false,
     category: "media",
-    credits: "SARDAR RDX",
-    description: "Download music from YouTube",
+    credits: "Shaan Khan", // Aapka naam yahan update kar diya gaya hai
+    description: "Fast YouTube Music Downloader",
     commandCategory: "media",
     usages: ".music [song name]",
     cooldowns: 5
@@ -19,119 +19,57 @@ module.exports.config = {
 
 const API_BASE = "https://yt-tt.onrender.com";
 
-async function downloadAudio(videoUrl) {
+module.exports.run = async function ({ api, event, args }) {
+    const { threadID, messageID } = event;
+    const query = args.join(" ");
+
+    if (!query) {
+        return api.sendMessage("❌ Please provide a song name!", threadID, messageID);
+    }
+
+    // Smooth Status Update
+    const statusMsg = await api.sendMessage(`✅ Apki Request Jari Hai Please wait "${query}"...`, threadID);
+
     try {
+        const searchResults = await yts(query);
+        const video = searchResults.videos[0];
+
+        if (!video) {
+            api.unsendMessage(statusMsg.messageID);
+            return api.sendMessage("❌ No results found.", threadID, messageID);
+        }
+
+        const { url, title, author, timestamp } = video;
+
+        // Smooth step transition
+        await api.editMessage(`📥 Downloading: ${title}`, statusMsg.messageID, threadID);
+
         const response = await axios.get(`${API_BASE}/api/youtube/audio`, {
-            params: { url: videoUrl },
+            params: { url: url },
             timeout: 60000,
             responseType: 'arraybuffer'
         });
 
-        if (response.data) {
-            return { success: true, data: response.data };
-        }
-        return null;
-    } catch (err) {
-        console.log("Audio download failed:", err.message);
-        return null;
-    }
-}
-
-module.exports.run = async function ({ api, event, args }) {
-    const query = args.join(" ");
-
-    if (!query) {
-        return api.sendMessage("❌ Please provide a song name", event.threadID, event.messageID);
-    }
-
-    const frames = [
-        "🩵▰▱▱▱▱▱▱▱▱▱ 10%",
-        "💙▰▰▱▱▱▱▱▱▱▱ 25%",
-        "💜▰▰▰▰▱▱▱▱▱▱ 45%",
-        "💖▰▰▰▰▰▰▱▱▱▱ 70%",
-        "💗▰▰▰▰▰▰▰▰▰▰ 100% 😍"
-    ];
-
-    const searchMsg = await api.sendMessage(`✅ Apki Request Jari Hai Please wait...: ${query}\n\n${frames[0]}`, event.threadID);
-
-    try {
-        const searchResults = await yts(query);
-        const videos = searchResults.videos;
-
-        if (!videos || videos.length === 0) {
-            api.unsendMessage(searchMsg.messageID);
-            return api.sendMessage("❌ No results found", event.threadID, event.messageID);
-        }
-
-        const firstResult = videos[0];
-        const videoUrl = firstResult.url;
-        const title = firstResult.title;
-        const author = firstResult.author.name;
-        const thumbnail = firstResult.thumbnail;
-
-        await api.editMessage(`🎵 Found: ${title}\n\n${frames[1]}`, searchMsg.messageID, event.threadID);
-        await api.editMessage(`🎵 Downloading...\n\n${frames[2]}`, searchMsg.messageID, event.threadID);
-
-        const downloadResult = await downloadAudio(videoUrl);
-
-        if (!downloadResult || !downloadResult.success) {
-            api.unsendMessage(searchMsg.messageID);
-            return api.sendMessage("❌ Download server is busy. Please try again later.", event.threadID, event.messageID);
-        }
-
-        await api.editMessage(`🎵 Processing...\n\n${frames[3]}`, searchMsg.messageID, event.threadID);
-
         const cacheDir = path.join(__dirname, "cache");
         await fs.ensureDir(cacheDir);
+        const audioPath = path.join(cacheDir, `${Date.now()}.mp3`);
+        
+        fs.writeFileSync(audioPath, Buffer.from(response.data));
 
-        const audioPath = path.join(cacheDir, `${Date.now()}_audio.mp3`);
-        fs.writeFileSync(audioPath, Buffer.from(downloadResult.data));
-
-        await api.editMessage(`🎵 Complete!\n\n${frames[4]}`, searchMsg.messageID, event.threadID);
-
-        let thumbPath = null;
-        if (thumbnail) {
-            try {
-                const thumbRes = await axios.get(thumbnail, { responseType: 'arraybuffer', timeout: 10000 });
-                thumbPath = path.join(cacheDir, `${Date.now()}_thumb.jpg`);
-                fs.writeFileSync(thumbPath, Buffer.from(thumbRes.data));
-            } catch (thumbError) {
-                console.log("Thumbnail download failed:", thumbError.message);
-            }
-        }
-
-        if (thumbPath && fs.existsSync(thumbPath)) {
-            await api.sendMessage(
-                {
-                    body: `🎵 ${title}\n📺 ${author}`,
-                    attachment: fs.createReadStream(thumbPath)
-                },
-                event.threadID
-            );
-        }
-
-        await api.sendMessage(
-            {
-                body: ` »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
-          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰👉`,
-                attachment: fs.createReadStream(audioPath)
-            },
-            event.threadID
-        );
-
-        setTimeout(() => {
-            try {
-                if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-                if (thumbPath && fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
-                api.unsendMessage(searchMsg.messageID);
-            } catch (err) {
-                console.log("Cleanup error:", err);
-            }
-        }, 10000);
+        // Sending Audio and Title together (No Image)
+        await api.sendMessage({
+            body: `🎵 Title: ${title}\n👤 Artist: ${author.name}\n⏱️ Duration: ${timestamp}\n\n✨  »»𝑶𝑾𝑵𝑬𝑹««★™  »»𝑺𝑯𝑨𝑨𝑵 𝑲𝑯𝑨𝑵««
+          🥀𝒀𝑬 𝑳𝑶 𝑩𝑨𝑩𝒀 𝑨𝑷𝑲𝑰💞`,
+            attachment: fs.createReadStream(audioPath)
+        }, threadID, () => {
+            // Instant Cleanup
+            if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+            api.unsendMessage(statusMsg.messageID);
+        }, messageID);
 
     } catch (error) {
-        console.error("Music command error:", error.message);
-        try { api.unsendMessage(searchMsg.messageID); } catch(e) {}
-        return api.sendMessage("❌ An error occurred. Please try again.", event.threadID, event.messageID);
+        console.error("Error:", error.message);
+        api.unsendMessage(statusMsg.messageID);
+        return api.sendMessage("❌ Error: Server is busy, try again!", threadID, messageID);
     }
 };
